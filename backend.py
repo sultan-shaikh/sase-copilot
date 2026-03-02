@@ -30,24 +30,31 @@ class QueryRequest(BaseModel):
 @app.get("/")
 async def serve_frontend():
     """Serves the frontend HTML interface."""
-    if os.path.exists("index.html"):
-        return FileResponse("index.html")
-    return {"error": "index.html not found. Please place the HTML file in the same directory as backend.py."}
+    # Use an absolute path to ensure Render finds the file regardless of its working directory
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    index_path = os.path.join(base_dir, "index.html")
+    
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": f"index.html not found at {index_path}. Please make sure index.html is committed to your GitHub repository."}
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
     """Saves uploaded SLA and Service Description files to the local 'data' directory."""
-    os.makedirs("data", exist_ok=True)
+    # Ensure data directory exists
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(base_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
     
     # Clear out old files for this demo to keep the context fresh
-    for filename in os.listdir("data"):
-        file_path = os.path.join("data", filename)
+    for filename in os.listdir(data_dir):
+        file_path = os.path.join(data_dir, filename)
         if os.path.isfile(file_path):
             os.unlink(file_path)
 
     saved_files = []
     for file in files:
-        file_path = f"data/{file.filename}"
+        file_path = os.path.join(data_dir, file.filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         saved_files.append(file.filename)
@@ -59,7 +66,10 @@ async def ingest_documents(api_key: str = Form(...)):
     """Uploads files from 'data' directory directly to Gemini's File API."""
     global global_gemini_files
     
-    if not os.path.exists("data") or not os.listdir("data"):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(base_dir, "data")
+    
+    if not os.path.exists(data_dir) or not os.listdir(data_dir):
         raise HTTPException(status_code=400, detail="No files found to ingest. Please upload files first.")
     
     if not api_key:
@@ -73,8 +83,8 @@ async def ingest_documents(api_key: str = Form(...)):
         
         # Upload each document directly to Gemini (handles up to 50MB PDFs natively)
         count = 0
-        for filename in os.listdir("data"):
-            file_path = os.path.join("data", filename)
+        for filename in os.listdir(data_dir):
+            file_path = os.path.join(data_dir, filename)
             if os.path.isfile(file_path):
                 # Uploading gives us a File object we can pass directly into the prompt
                 g_file = client.files.upload(
