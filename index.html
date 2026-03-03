@@ -35,7 +35,7 @@
                 <input type="file" id="fileInput" multiple class="hidden" accept=".pdf,.txt,.doc,.docx" onchange="handleFileSelect(event)">
                 <label for="fileInput" class="cursor-pointer block">
                     <i class="fa-solid fa-cloud-arrow-up text-2xl text-blue-500 mb-2"></i>
-                    <p class="text-sm font-medium text-gray-700">Click to upload documents</p>
+                    <p class="text-sm font-medium text-gray-700">Click to add documents</p>
                     <p class="text-xs text-gray-500 mt-1">PDF, TXT, DOCX</p>
                 </label>
             </div>
@@ -43,10 +43,15 @@
             <!-- Uploaded Files List -->
             <ul id="fileList" class="mt-4 space-y-2"></ul>
 
-            <!-- Action Button -->
-            <button id="ingestBtn" onclick="ingestDocuments()" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hidden">
-                <i class="fa-solid fa-microchip mr-2"></i> Process Documents
-            </button>
+            <!-- Action Buttons -->
+            <div class="mt-6 flex gap-2">
+                <button id="ingestBtn" onclick="ingestDocuments()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hidden">
+                    <i class="fa-solid fa-microchip mr-2"></i> Process
+                </button>
+                <button id="clearBtn" onclick="clearDocuments()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-medium py-2 px-4 rounded-md transition-colors shadow-sm hidden" title="Clear all documents">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
             <p id="ingestStatus" class="text-xs text-center mt-2 font-medium"></p>
         </div>
         
@@ -61,7 +66,7 @@
         <!-- Top Nav -->
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
             <div class="flex items-center gap-2">
-                <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-200" id="connectionStatus">Waiting for docs...</span>
+                <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-gray-200" id="connectionStatus">Waiting for docs...</span>
             </div>
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-key text-gray-400"></i>
@@ -77,7 +82,8 @@
                     <i class="fa-solid fa-robot text-blue-600"></i>
                 </div>
                 <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-200 shadow-sm max-w-3xl">
-                    <p class="text-gray-800">Hello! I am your Managed SASE Assistant. Upload your Service Descriptions, SLAs, or technical documentation on the left, click "Process", and then ask me anything about them.</p>
+                    <p class="text-gray-800">Hello! I am your Managed SASE Assistant.</p>
+                    <p class="text-gray-800 mt-2">Upload multiple Service Descriptions or SLAs on the left, click "Process", and then ask me to compare them (e.g., "Compare the number of changes allowed per month across these products").</p>
                 </div>
             </div>
         </div>
@@ -85,7 +91,7 @@
         <!-- Input Area -->
         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-10 pb-6 px-6">
             <div class="max-w-4xl mx-auto relative">
-                <input type="text" id="questionInput" placeholder="Ask about uptime, routing policies, or security protocols..." class="w-full pl-4 pr-12 py-4 rounded-xl border border-gray-300 shadow-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 bg-white" onkeypress="handleKeyPress(event)">
+                <input type="text" id="questionInput" placeholder="Ask about uptime, routing policies, or compare security protocols..." class="w-full pl-4 pr-12 py-4 rounded-xl border border-gray-300 shadow-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 bg-white" onkeypress="handleKeyPress(event)">
                 <button onclick="askQuestion()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors">
                     <i class="fa-solid fa-paper-plane text-xl"></i>
                 </button>
@@ -95,8 +101,6 @@
     </main>
 
     <script>
-        let uploadedFiles = [];
-
         // UI Helpers
         const appendMessage = (text, isUser = false, sources = []) => {
             const chatHistory = document.getElementById('chatHistory');
@@ -128,17 +132,17 @@
             el.className = `text-xs text-center mt-2 font-medium ${type === 'error' ? 'text-red-500' : type === 'success' ? 'text-green-600' : 'text-blue-500'}`;
         };
 
-        // File Selection & Upload
+        // File Selection & Upload (Cumulative)
         const handleFileSelect = async (event) => {
             const files = event.target.files;
             if (!files.length) return;
 
             const fileList = document.getElementById('fileList');
-            fileList.innerHTML = '';
-            
             const formData = new FormData();
+            
             for (let i = 0; i < files.length; i++) {
                 formData.append('files', files[i]);
+                // Append visually without clearing the list
                 fileList.innerHTML += `
                     <li class="flex items-center text-sm bg-gray-100 p-2 rounded text-gray-700 border border-gray-200">
                         <i class="fa-solid fa-file-lines text-gray-400 mr-2"></i> 
@@ -152,11 +156,34 @@
             try {
                 const response = await fetch(`${apiUrl}/upload`, { method: 'POST', body: formData });
                 if (response.ok) {
-                    setStatus("Files uploaded! Ready to process.", "success");
+                    setStatus("Files added! Ready to process.", "success");
                     document.getElementById('ingestBtn').classList.remove('hidden');
+                    document.getElementById('clearBtn').classList.remove('hidden');
                 } else {
                     const err = await response.json();
                     setStatus(`Upload failed: ${err.detail || 'Unknown error'}`, "error");
+                }
+            } catch (error) {
+                setStatus("Error connecting to backend.", "error");
+            }
+        };
+
+        // Clear Documents
+        const clearDocuments = async () => {
+            const apiUrl = document.getElementById('apiUrl').value;
+            setStatus("Clearing context...", "info");
+            
+            try {
+                const response = await fetch(`${apiUrl}/clear`, { method: 'POST' });
+                if (response.ok) {
+                    document.getElementById('fileList').innerHTML = '';
+                    document.getElementById('ingestBtn').classList.add('hidden');
+                    document.getElementById('clearBtn').classList.add('hidden');
+                    setStatus("Context cleared. Ready for new documents.", "info");
+                    
+                    const statusBadge = document.getElementById('connectionStatus');
+                    statusBadge.textContent = "Waiting for docs...";
+                    statusBadge.className = "bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-gray-200";
                 }
             } catch (error) {
                 setStatus("Error connecting to backend.", "error");
@@ -176,7 +203,7 @@
             const btn = document.getElementById('ingestBtn');
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processing...`;
-            setStatus("Extracting text and uploading to Gemini...", "info");
+            setStatus("Analyzing all documents...", "info");
 
             const formData = new FormData();
             formData.append('api_key', apiKey);
@@ -196,7 +223,7 @@
                 setStatus("Error connecting to backend.", "error");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-microchip mr-2"></i> Process Documents`;
+                btn.innerHTML = `<i class="fa-solid fa-microchip mr-2"></i> Process`;
             }
         };
 
@@ -248,7 +275,7 @@
                 }
             } catch (error) {
                 document.getElementById(loadingId).remove();
-                appendMessage("Failed to connect to the backend server. Make sure your Python backend is running on localhost:8000.", false);
+                appendMessage("Failed to connect to the backend server.", false);
             }
         };
     </script>
