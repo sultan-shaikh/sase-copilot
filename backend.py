@@ -15,7 +15,7 @@ app = FastAPI(title="SASE Copilot API")
 # Enable CORS so the HTML frontend can communicate with this backend securely
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For production, restrict this to your actual frontend URL
+    allow_origins=["*"], 
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -30,28 +30,20 @@ class QueryRequest(BaseModel):
 @app.get("/")
 async def serve_frontend():
     """Serves the frontend HTML interface."""
-    # Use an absolute path to ensure Render finds the file regardless of its working directory
     base_dir = os.path.dirname(os.path.abspath(__file__))
     index_path = os.path.join(base_dir, "index.html")
     
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return {"error": f"index.html not found at {index_path}. Please make sure index.html is committed to your GitHub repository."}
+    return {"error": f"index.html not found at {index_path}. Please make sure index.html is committed."}
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
-    """Saves uploaded SLA and Service Description files to the local 'data' directory."""
-    # Ensure data directory exists
+    """Saves uploaded files to the local 'data' directory. Files now accumulate!"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(base_dir, "data")
     os.makedirs(data_dir, exist_ok=True)
     
-    # Clear out old files for this demo to keep the context fresh
-    for filename in os.listdir(data_dir):
-        file_path = os.path.join(data_dir, filename)
-        if os.path.isfile(file_path):
-            os.unlink(file_path)
-
     saved_files = []
     for file in files:
         file_path = os.path.join(data_dir, file.filename)
@@ -61,9 +53,26 @@ async def upload_files(files: List[UploadFile] = File(...)):
         
     return {"message": "Files uploaded successfully.", "files": saved_files}
 
+@app.post("/clear")
+async def clear_documents():
+    """Wipes the current document context so the user can start a fresh comparison."""
+    global global_gemini_files
+    global_gemini_files.clear()
+    
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(base_dir, "data")
+    
+    if os.path.exists(data_dir):
+        for filename in os.listdir(data_dir):
+            file_path = os.path.join(data_dir, filename)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+                
+    return {"message": "All documents cleared."}
+
 @app.post("/ingest")
 async def ingest_documents(api_key: str = Form(...)):
-    """Uploads files from 'data' directory directly to Gemini's File API."""
+    """Uploads accumulated files from 'data' directory directly to Gemini's File API."""
     global global_gemini_files
     
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -78,15 +87,14 @@ async def ingest_documents(api_key: str = Form(...)):
     try:
         client = genai.Client(api_key=api_key)
         
-        # Clear out previously uploaded files from memory
+        # Clear out previously uploaded files from memory to refresh context
         global_gemini_files.clear()
         
-        # Upload each document directly to Gemini (handles up to 50MB PDFs natively)
+        # Upload each document directly to Gemini
         count = 0
         for filename in os.listdir(data_dir):
             file_path = os.path.join(data_dir, filename)
             if os.path.isfile(file_path):
-                # Uploading gives us a File object we can pass directly into the prompt
                 g_file = client.files.upload(
                     file=file_path, 
                     config=types.UploadFileConfig(display_name=filename)
@@ -109,17 +117,19 @@ async def query_documents(req: QueryRequest):
     try:
         client = genai.Client(api_key=req.api_key)
 
+        # Updated prompt to explicitly encourage cross-document comparisons and structured outputs
         system_instruction = (
             "You are an expert technical assistant for a Managed SASE product. "
+            "You have been provided with one or multiple documents (e.g., SLAs, service descriptions). "
             "Answer the user's question using ONLY the provided context from the uploaded documents. "
+            "If the user asks for a comparison across multiple products or documents, meticulously extract the relevant metrics "
+            "(such as uptime, changes per month, SLAs) from EACH document and present a clear, structured comparison (e.g., using bullet points or a markdown table). "
             "If the answer is not contained in the provided documents, explicitly state: "
             "'I cannot find the answer to this in the uploaded documents.'"
         )
         
-        # Combine the user's question and the raw Gemini file objects
         contents = [req.question] + global_gemini_files
         
-        # Generate the response using Gemini's massive context window
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=contents,
@@ -129,7 +139,6 @@ async def query_documents(req: QueryRequest):
             )
         )
         
-        # Return the display names of the files we used as context
         unique_sources = [f.display_name for f in global_gemini_files if f.display_name]
         
         return {
