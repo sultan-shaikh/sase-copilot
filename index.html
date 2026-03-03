@@ -3,60 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SASE Sales Enablement Copilot</title>
+    <title>Product Expert Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Custom scrollbar for a polished look */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .loader { border-top-color: #3b82f6; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
-        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Toggle Switch Styling */
+        .toggle-checkbox:checked { right: 0; border-color: #3b82f6; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #3b82f6; }
+        .toggle-checkbox { right: 4px; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+        .toggle-label { background-color: #cbd5e1; transition: all 0.3s; }
     </style>
 </head>
 <body class="bg-gray-50 h-screen flex overflow-hidden font-sans text-gray-800">
 
-    <!-- Left Sidebar: Document Management -->
+    <!-- Left Sidebar -->
     <aside class="w-80 bg-white border-r border-gray-200 flex flex-col shadow-sm z-10">
         <div class="p-6 border-b border-gray-200">
             <h1 class="text-xl font-bold text-blue-600 flex items-center gap-2">
-                <i class="fa-solid fa-shield-halved"></i> SASE Copilot
+                <i class="fa-solid fa-user-tie"></i> Expert Agent
             </h1>
-            <p class="text-xs text-gray-500 mt-1">SASE Sales Enablement PM</p>
+            <p class="text-xs text-gray-500 mt-1">Internal & External Copilot</p>
         </div>
 
-        <div class="p-4 flex-1 overflow-y-auto">
-            <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Knowledge Base</h2>
+        <div class="p-4 flex-1 overflow-y-auto space-y-6">
             
-            <!-- Upload Box -->
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors">
-                <input type="file" id="fileInput" multiple class="hidden" accept=".pdf,.txt,.doc,.docx" onchange="handleFileSelect(event)">
-                <label for="fileInput" class="cursor-pointer block">
-                    <i class="fa-solid fa-cloud-arrow-up text-2xl text-blue-500 mb-2"></i>
-                    <p class="text-sm font-medium text-gray-700">Click to add documents</p>
-                    <p class="text-xs text-gray-500 mt-1">PDF, TXT, DOCX</p>
-                </label>
+            <!-- Agent Persona Configuration -->
+            <div>
+                <h2 class="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wider"><i class="fa-solid fa-sliders text-gray-400 mr-1"></i> Agent Settings</h2>
+                <div class="space-y-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Target Product Expertise</label>
+                        <input type="text" id="targetProduct" value="Prisma SASE by Palo Alto Networks" class="w-full text-sm p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <label class="text-xs font-semibold text-gray-600 flex items-center gap-1">
+                            <i class="fa-brands fa-google text-blue-500"></i> Live Web Search
+                        </label>
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="searchToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" checked/>
+                            <label for="searchToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Uploaded Files List -->
-            <ul id="fileList" class="mt-4 space-y-2"></ul>
+            <!-- Internal Knowledge Base -->
+            <div>
+                <h2 class="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wider"><i class="fa-solid fa-book-bookmark text-gray-400 mr-1"></i> Internal Context</h2>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors">
+                    <input type="file" id="fileInput" multiple class="hidden" accept=".pdf,.txt,.doc,.docx" onchange="handleFileSelect(event)">
+                    <label for="fileInput" class="cursor-pointer block">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-blue-500 mb-2"></i>
+                        <p class="text-sm font-medium text-gray-700">Upload MSP Docs</p>
+                        <p class="text-xs text-gray-500 mt-1">SLAs, Service Descriptions</p>
+                    </label>
+                </div>
 
-            <!-- Action Buttons -->
-            <div class="mt-6 flex gap-2">
-                <button id="ingestBtn" onclick="ingestDocuments()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hidden">
-                    <i class="fa-solid fa-microchip mr-2"></i> Process
-                </button>
-                <button id="clearBtn" onclick="clearDocuments()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-medium py-2 px-4 rounded-md transition-colors shadow-sm hidden" title="Clear all documents">
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>
+                <ul id="fileList" class="mt-2 space-y-2"></ul>
+
+                <div class="mt-4 flex gap-2">
+                    <button id="ingestBtn" onclick="ingestDocuments()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm disabled:opacity-50 hidden text-sm">
+                        <i class="fa-solid fa-microchip mr-1"></i> Sync Docs
+                    </button>
+                    <button id="clearBtn" onclick="clearDocuments()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-medium py-2 px-3 rounded-md transition-colors shadow-sm hidden text-sm" title="Clear all documents">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                <p id="ingestStatus" class="text-xs text-center mt-2 font-medium"></p>
             </div>
-            <p id="ingestStatus" class="text-xs text-center mt-2 font-medium"></p>
         </div>
         
         <div class="p-4 border-t border-gray-200 bg-gray-50">
-            <label class="block text-xs font-semibold text-gray-700 mb-1">https://sase-copilot.onrender.com</label>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Backend API URL</label>
             <input type="text" id="apiUrl" value="http://localhost:8000" class="w-full text-sm p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
     </aside>
@@ -64,9 +88,11 @@
     <!-- Main Content: Chat Interface -->
     <main class="flex-1 flex flex-col relative">
         <!-- Top Nav -->
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
             <div class="flex items-center gap-2">
-                <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-gray-200" id="connectionStatus">Waiting for docs...</span>
+                <span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-200" id="connectionStatus">
+                    <i class="fa-solid fa-globe mr-1"></i> Agent Ready (External Only)
+                </span>
             </div>
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-key text-gray-400"></i>
@@ -79,12 +105,12 @@
             <!-- Welcome Message -->
             <div class="flex gap-4">
                 <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-robot text-blue-600"></i>
+                    <i class="fa-solid fa-user-tie text-blue-600"></i>
                 </div>
                 <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-200 shadow-sm max-w-3xl">
-                    <p class="text-gray-800 font-semibold mb-1">Welcome to the SASE Sales Enablement Copilot! 🚀</p>
-                    <p class="text-gray-800">I am here to help Sales and Presales instantly find answers from Product Management documentation.</p>
-                    <p class="text-gray-800 mt-2">Upload the latest Service Descriptions, SLAs, or Battlecards on the left, click "Process", and use the quick prompts below to draft emails, compare features, or verify technical requirements.</p>
+                    <p class="text-gray-800 font-semibold mb-1">I am your Product Specific Agent! 🌐</p>
+                    <p class="text-gray-800">I specialize in combining the latest internet knowledge about your target product with your internal MSP documents.</p>
+                    <p class="text-gray-800 mt-2">Try asking me to compare our internal offering with competitors like Zscaler or Cato, or see how our SLAs stack up against standard industry MSSPs.</p>
                 </div>
             </div>
         </div>
@@ -93,43 +119,42 @@
         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-10 pb-6 px-6">
             <div class="max-w-4xl mx-auto relative">
                 
-                <!-- Quick Prompts for Sales -->
+                <!-- Advanced Quick Prompts -->
                 <div class="flex gap-2 mb-3 overflow-x-auto pb-2" style="scrollbar-width: none;">
-                    <button onclick="document.getElementById('questionInput').value = 'Create a summary of the SLAs for these products to include in a customer proposal.'; askQuestion();" class="whitespace-nowrap bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 text-xs px-3 py-1.5 rounded-full transition-colors shadow-sm font-medium">
-                        <i class="fa-solid fa-file-contract mr-1"></i> Summarize SLAs
+                    <button onclick="document.getElementById('questionInput').value = `Build a competitive battlecard comparing ${document.getElementById('targetProduct').value} against Zscaler. Include both vendor capabilities and our specific managed offerings based on the uploaded docs.`; askQuestion();" class="whitespace-nowrap bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 text-xs px-3 py-1.5 rounded-full transition-colors shadow-sm font-medium">
+                        <i class="fa-solid fa-swords mr-1"></i> Competitor Battlecard
                     </button>
-                    <button onclick="document.getElementById('questionInput').value = 'What are the key technical differentiators between these products?';" class="whitespace-nowrap bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 text-xs px-3 py-1.5 rounded-full transition-colors shadow-sm font-medium">
-                        <i class="fa-solid fa-code-compare mr-1"></i> Compare Features
+                    <button onclick="document.getElementById('questionInput').value = 'Search the web for the latest feature releases for this product and tell me if our uploaded Service Descriptions cover them.'; askQuestion();" class="whitespace-nowrap bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 text-xs px-3 py-1.5 rounded-full transition-colors shadow-sm font-medium">
+                        <i class="fa-brands fa-searchengin mr-1"></i> Analyze Latest Features vs Docs
                     </button>
-                    <button onclick="document.getElementById('questionInput').value = 'Generate a short customer-facing email explaining the deployment process based on these docs.';" class="whitespace-nowrap bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 text-xs px-3 py-1.5 rounded-full transition-colors shadow-sm font-medium">
-                        <i class="fa-solid fa-envelope-open-text mr-1"></i> Draft Email Pitch
+                    <button onclick="document.getElementById('questionInput').value = 'Compare our uploaded SLA guarantees against typical MSSP competitors in the market. Create a markdown table.'; askQuestion();" class="whitespace-nowrap bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 text-xs px-3 py-1.5 rounded-full transition-colors shadow-sm font-medium">
+                        <i class="fa-solid fa-scale-balanced mr-1"></i> Market SLA Comparison
                     </button>
                 </div>
 
-                <input type="text" id="questionInput" placeholder="Ask about uptime, routing policies, or compare security protocols..." class="w-full pl-4 pr-12 py-4 rounded-xl border border-gray-300 shadow-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 bg-white" onkeypress="handleKeyPress(event)">
+                <input type="text" id="questionInput" placeholder="Ask for competitive analysis, SLA breakdowns, or market trends..." class="w-full pl-4 pr-12 py-4 rounded-xl border border-gray-300 shadow-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 bg-white" onkeypress="handleKeyPress(event)">
                 <button onclick="askQuestion()" class="absolute right-3 bottom-4 text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors">
                     <i class="fa-solid fa-paper-plane text-xl"></i>
                 </button>
             </div>
-            <p class="text-center text-xs text-gray-400 mt-2">Answers are generated by Gemini 2.5 and strictly grounded in your uploaded documents.</p>
         </div>
     </main>
 
     <script>
-        // UI Helpers
         const appendMessage = (text, isUser = false, sources = []) => {
             const chatHistory = document.getElementById('chatHistory');
             const msgDiv = document.createElement('div');
-            // Added 'group' to enable hover effects for the copy button
             msgDiv.className = `flex gap-4 ${isUser ? 'flex-row-reverse' : 'group'}`;
             
             let sourceHtml = '';
             if (sources && sources.length > 0) {
-                const sourcePills = sources.map(s => `<span class="inline-block bg-gray-100 border border-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md mt-2 mr-2"><i class="fa-regular fa-file-pdf mr-1"></i>${s}</span>`).join('');
-                sourceHtml = `<div class="mt-2 border-t border-gray-100 pt-2"><p class="text-xs font-semibold text-gray-500">Sources:</p>${sourcePills}</div>`;
+                const sourcePills = sources.map(s => {
+                    const icon = s === 'Live Internet Search' ? 'fa-brands fa-google text-blue-500' : 'fa-regular fa-file-pdf';
+                    return `<span class="inline-block bg-gray-100 border border-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md mt-2 mr-2"><i class="${icon} mr-1"></i>${s}</span>`;
+                }).join('');
+                sourceHtml = `<div class="mt-2 border-t border-gray-100 pt-2"><p class="text-xs font-semibold text-gray-500">Knowledge Sources:</p>${sourcePills}</div>`;
             }
 
-            // Copy to clipboard logic specifically for AI responses
             const copyBtnHtml = !isUser ? `
                 <button onclick="const ta = document.createElement('textarea'); ta.value = this.parentElement.querySelector('p').innerText; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); this.innerHTML='<i class=\\'fa-solid fa-check\\'></i> Copied!'; setTimeout(() => this.innerHTML='<i class=\\'fa-regular fa-copy\\'></i> Copy', 2000);" 
                 class="absolute top-2 right-2 text-xs text-gray-500 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-50 border border-gray-200 px-2 py-1 rounded shadow-sm">
@@ -139,7 +164,7 @@
 
             msgDiv.innerHTML = `
                 <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser ? 'bg-gray-800' : 'bg-blue-100'}">
-                    <i class="${isUser ? 'fa-solid fa-user text-white' : 'fa-solid fa-robot text-blue-600'}"></i>
+                    <i class="${isUser ? 'fa-solid fa-user text-white' : 'fa-solid fa-user-tie text-blue-600'}"></i>
                 </div>
                 <div class="${isUser ? 'bg-gray-800 text-white' : 'bg-white text-gray-800 border border-gray-200 shadow-sm relative'} p-4 rounded-2xl ${isUser ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-3xl pr-16">
                     <p class="whitespace-pre-wrap leading-relaxed">${text}</p>
@@ -157,7 +182,6 @@
             el.className = `text-xs text-center mt-2 font-medium ${type === 'error' ? 'text-red-500' : type === 'success' ? 'text-green-600' : 'text-blue-500'}`;
         };
 
-        // File Selection & Upload (Cumulative)
         const handleFileSelect = async (event) => {
             const files = event.target.files;
             if (!files.length) return;
@@ -167,9 +191,8 @@
             
             for (let i = 0; i < files.length; i++) {
                 formData.append('files', files[i]);
-                // Append visually without clearing the list
                 fileList.innerHTML += `
-                    <li class="flex items-center text-sm bg-gray-100 p-2 rounded text-gray-700 border border-gray-200">
+                    <li class="flex items-center text-xs bg-gray-100 p-2 rounded text-gray-700 border border-gray-200">
                         <i class="fa-solid fa-file-lines text-gray-400 mr-2"></i> 
                         <span class="truncate">${files[i].name}</span>
                     </li>`;
@@ -181,7 +204,7 @@
             try {
                 const response = await fetch(`${apiUrl}/upload`, { method: 'POST', body: formData });
                 if (response.ok) {
-                    setStatus("Files added! Ready to process.", "success");
+                    setStatus("Files added! Ready to sync.", "success");
                     document.getElementById('ingestBtn').classList.remove('hidden');
                     document.getElementById('clearBtn').classList.remove('hidden');
                 } else {
@@ -193,7 +216,6 @@
             }
         };
 
-        // Clear Documents
         const clearDocuments = async () => {
             const apiUrl = document.getElementById('apiUrl').value;
             setStatus("Clearing context...", "info");
@@ -204,31 +226,26 @@
                     document.getElementById('fileList').innerHTML = '';
                     document.getElementById('ingestBtn').classList.add('hidden');
                     document.getElementById('clearBtn').classList.add('hidden');
-                    setStatus("Context cleared. Ready for new documents.", "info");
+                    setStatus("Internal docs cleared.", "info");
                     
-                    const statusBadge = document.getElementById('connectionStatus');
-                    statusBadge.textContent = "Waiting for docs...";
-                    statusBadge.className = "bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-gray-200";
+                    document.getElementById('connectionStatus').innerHTML = '<i class="fa-solid fa-globe mr-1"></i> Agent Ready (External Only)';
+                    document.getElementById('connectionStatus').className = "bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-200";
                 }
             } catch (error) {
                 setStatus("Error connecting to backend.", "error");
             }
         };
 
-        // Ingest into Vector DB
         const ingestDocuments = async () => {
             const apiKey = document.getElementById('apiKey').value;
             const apiUrl = document.getElementById('apiUrl').value;
             
-            if (!apiKey) {
-                alert("Please enter your Gemini API Key in the top right corner.");
-                return;
-            }
+            if (!apiKey) { alert("Please enter your Gemini API Key."); return; }
 
             const btn = document.getElementById('ingestBtn');
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processing...`;
-            setStatus("Analyzing all documents...", "info");
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Syncing...`;
+            setStatus("Syncing internal docs with Gemini...", "info");
 
             const formData = new FormData();
             formData.append('api_key', apiKey);
@@ -238,9 +255,9 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    setStatus("Knowledge base ready!", "success");
-                    document.getElementById('connectionStatus').textContent = "Context Loaded";
-                    document.getElementById('connectionStatus').className = "bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-200";
+                    setStatus("Knowledge base synced!", "success");
+                    document.getElementById('connectionStatus').innerHTML = '<i class="fa-solid fa-link mr-1"></i> Agent Ready (Internal + External)';
+                    document.getElementById('connectionStatus').className = "bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-green-200";
                 } else {
                     setStatus(`Error: ${data.detail}`, "error");
                 }
@@ -248,11 +265,10 @@
                 setStatus("Error connecting to backend.", "error");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-microchip mr-2"></i> Process`;
+                btn.innerHTML = `<i class="fa-solid fa-microchip mr-1"></i> Sync Docs`;
             }
         };
 
-        // Chat Logic
         const handleKeyPress = (e) => {
             if (e.key === 'Enter') askQuestion();
         }
@@ -262,22 +278,20 @@
             const question = input.value.trim();
             const apiKey = document.getElementById('apiKey').value;
             const apiUrl = document.getElementById('apiUrl').value;
+            const targetProduct = document.getElementById('targetProduct').value;
+            const enableSearch = document.getElementById('searchToggle').checked;
 
             if (!question) return;
-            if (!apiKey) {
-                alert("Please enter your Gemini API Key.");
-                return;
-            }
+            if (!apiKey) { alert("Please enter your Gemini API Key."); return; }
 
             appendMessage(question, true);
             input.value = '';
             
-            // Add loading indicator
             const chatHistory = document.getElementById('chatHistory');
             const loadingId = 'loader-' + Date.now();
             chatHistory.insertAdjacentHTML('beforeend', `
                 <div id="${loadingId}" class="flex gap-4">
-                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center"><i class="fa-solid fa-robot text-blue-600"></i></div>
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center"><i class="fa-solid fa-user-tie text-blue-600"></i></div>
                     <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-200 shadow-sm"><div class="flex space-x-2"><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div></div></div>
                 </div>
             `);
@@ -287,7 +301,12 @@
                 const response = await fetch(`${apiUrl}/query`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question, api_key: apiKey })
+                    body: JSON.stringify({ 
+                        question, 
+                        api_key: apiKey,
+                        target_product: targetProduct,
+                        enable_search: enableSearch
+                    })
                 });
                 
                 document.getElementById(loadingId).remove();
@@ -306,5 +325,3 @@
     </script>
 </body>
 </html>
-
-
